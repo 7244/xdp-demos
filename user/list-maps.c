@@ -12,9 +12,9 @@ void print_hexstring(const void *ptr, uintptr_t size){
 }
 
 /* returns 0 when prog is not found */
-int get_prog_id_by_map_id(__u32 map_id){
+__u32 get_prog_id_by_map_id(__u32 map_id){
   struct bpf_prog_info prog_info;
-  __u32 prog_info_len = sizeof(prog_info);
+  __u32 prog_info_len;
 
   __u32 prog_id = 0;
   while(bpf_prog_get_next_id(prog_id, &prog_id) == 0){
@@ -26,21 +26,26 @@ int get_prog_id_by_map_id(__u32 map_id){
     }
 
     memset(&prog_info, 0, sizeof(prog_info));
+    prog_info_len = sizeof(prog_info);
     if(bpf_prog_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
       perror("");
       exit(1);
     }
+
+    /* TODO need to bound check prog_info_len */
 
     __u32 num_maps = prog_info.nr_map_ids;
     memset(&prog_info, 0, sizeof(prog_info));
     prog_info.nr_map_ids = num_maps;
     prog_info.map_ids = (uintptr_t)malloc(num_maps * sizeof(__u32));
     memset((void *)prog_info.map_ids, 0, num_maps * sizeof(__u32));
-
+    prog_info_len = sizeof(prog_info);
     if(bpf_prog_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
       perror("");
       exit(1);
     }
+
+    /* TODO need to bound check prog_info_len */
 
     bool found = false;
 
@@ -66,6 +71,29 @@ int get_prog_id_by_map_id(__u32 map_id){
   return 0;
 }
 
+/* returns how many bytes is info. 0 means failed to get info or info is not available */
+__u32 get_plain_prog_info_by_id(__u32 prog_id, struct bpf_prog_info *prog_info){
+  int prog_fd = bpf_prog_get_fd_by_id(prog_id);
+  if(prog_fd < 0){
+    perror("");
+    exit(1);
+  }
+
+  memset(prog_info, 0, sizeof(*prog_info));
+  __u32 prog_info_len = sizeof(*prog_info);
+  if(bpf_prog_get_info_by_fd(prog_fd, prog_info, &prog_info_len)){
+    perror("");
+    exit(1);
+  }
+
+  if(close(prog_fd)){
+    perror("");
+    exit(1);
+  }
+
+  return prog_info_len;
+}
+
 int main(){
   int err;
 
@@ -86,7 +114,21 @@ int main(){
       return 1;
     }
 
-    printf("map info (%d:%s):\n", get_prog_id_by_map_id(map_id), info.name);
+    /* TODO need to bound check info_len for every info */
+
+    __u32 prog_id = get_prog_id_by_map_id(map_id);
+    if(prog_id != 0){
+      struct bpf_prog_info prog_info;
+      __u32 prog_info_len = get_plain_prog_info_by_id(prog_id, &prog_info);
+
+      /* TODO need bound check prog_info_len */
+
+      printf("map info (%u/%s : %s):\n", prog_id, prog_info.name, info.name);
+    }
+    else{
+      printf("map info (0/ : %s):\n", info.name);
+    }
+
     printf(" type: %u\n", info.type);
     printf(" id: %u\n", info.id);
     printf(" key_size: %u\n", info.key_size);
