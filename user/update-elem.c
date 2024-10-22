@@ -49,6 +49,7 @@ int main(int argc, char **argv){
   int map_fd = bpf_map_get_fd_by_id(atoi(argv[1]));
   if(map_fd < 0){
     perror("");
+    return 1;
   }
 
   struct bpf_map_info info;

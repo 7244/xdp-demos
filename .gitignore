@@ -2,3 +2,4 @@ Makefile
 load.sh
 unload.sh
 bpf.o
+*.exe

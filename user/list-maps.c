@@ -123,10 +123,10 @@ int main(){
 
       /* TODO need bound check prog_info_len */
 
-      printf("map info (%u/%s : %s):\n", prog_id, prog_info.name, info.name);
+      printf("map_info %u %s  %u %s\n", prog_id, prog_info.name, info.id, info.name);
     }
     else{
-      printf("map info (0/ : %s):\n", info.name);
+      printf("map_info 0 Unknown  %u %s\n", info.id, info.name);
     }
 
     printf(" type: %u\n", info.type);
