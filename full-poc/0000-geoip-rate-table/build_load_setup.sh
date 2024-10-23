@@ -58,6 +58,8 @@ cerr
 countryblockarr_id=$(get_map_id countryblockarr)
 ipv4pcountrymap_id=$(get_map_id ipv4pcountrymap)
 ipv6pcountrymap_id=$(get_map_id ipv6pcountrymap)
+ipv4ratemap_id=$(get_map_id ipv4ratemap)
+ipv6ratemap_id=$(get_map_id ipv6ratemap)
 
 clang++ -std=c++2a control_xdp.cpp -o control_xdp.exe -lbpf
 cerr
