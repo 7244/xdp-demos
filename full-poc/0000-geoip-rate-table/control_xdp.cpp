@@ -7,23 +7,31 @@
 
 #include "../../extra/country_code.hpp"
 
-uint8_t id_from_alpha2(const char *alpha2str){
+uint8_t id_from_alpha2(const char *alpha2str, uintptr_t length = 0){
+  length = length ? length : strlen(alpha2str);
+  /* TODO strlen(alpha2str) can be less than 2 when length is 2 */
+  if(length != 2){
+    fprintf(stderr, "alpha2 length is not 2\n");
+    exit(1);
+  }
+
   for(uint32_t i = 0; i < country_code.GetMemberAmount(); i++){
-    if(strncasecmp(alpha2str, country_code.NA(i)->alpha2, 2) == 0){
+    if(strncasecmp(alpha2str, country_code.NA(i)->alpha2, length) == 0){
       return i;
     }
   }
+
   return country_code.AN(&country_code_t::Unknown);
 }
 
 int write_prefixes(int argc, char **argv){
-  if(argc < 4){
+  if(argc < 2){
     fprintf(stderr, "need ipv4pcountrymap_id ipv6pcountrymap_id as parameter\n");
     return 1;
   }
 
-  uint32_t ipv4pcountrymap_id = atoi(argv[2]);
-  uint32_t ipv6pcountrymap_id = atoi(argv[3]);
+  uint32_t ipv4pcountrymap_id = atoi(argv[0]);
+  uint32_t ipv6pcountrymap_id = atoi(argv[1]);
 
   if(!ipv4pcountrymap_id){
     fprintf(stderr, "ipv4pcountrymap_id cant be 0\n");
@@ -45,7 +53,7 @@ int write_prefixes(int argc, char **argv){
     return 1;
   }
 
-  for(int iarg = 4; iarg < argc; iarg++){
+  for(int iarg = 2; iarg < argc; iarg++){
     char *arg = argv[iarg];
 
     FILE *f = fopen(arg, "rb");
@@ -88,7 +96,7 @@ int write_prefixes(int argc, char **argv){
       return 1;
     }
 
-    uint8_t country_id = id_from_alpha2(arg);
+    uint8_t country_id = id_from_alpha2(arg, 2);
 
     if(country_id == country_code.AN(&country_code_t::Unknown)){
       fprintf(stderr, "country_id is Unknown %.*s\n", 2, arg);
@@ -137,12 +145,12 @@ int write_prefixes(int argc, char **argv){
 }
 
 int update_country(int argc, char **argv){
-  if(argc < 5){
-    fprintf(stderr, "need map_id ip 0/1 as parameter\n");
+  if(argc < 3){
+    fprintf(stderr, "need map_id alpha2 0/1 as parameter\n");
     return 1;
   }
 
-  uint32_t map_id = atoi(argv[2]);
+  uint32_t map_id = atoi(argv[0]);
 
   if(!map_id){
     fprintf(stderr, "map_id cant be 0\n");
@@ -155,8 +163,12 @@ int update_country(int argc, char **argv){
     return 1;
   }
 
-  uint32_t id = id_from_alpha2(argv[3]);
-  uint8_t value = atoi(argv[4]);
+  uint32_t id = id_from_alpha2(argv[1]);
+  if(id == country_code.AN(&country_code_t::Unknown)){
+    fprintf(stderr, "id_from_alpha2 returns Unknown for %s\n", argv[1]);
+    return 1;
+  }
+  uint8_t value = atoi(argv[2]);
 
   if(bpf_map_update_elem(map_fd, &id, &value, BPF_ANY)){
     perror("bpf_map_update_elem");
@@ -173,10 +185,10 @@ int main(int argc, char **argv){
   }
 
   if(atoi(argv[1]) == 0){
-    return write_prefixes(argc, argv);
+    return write_prefixes(argc - 2, &argv[2]);
   }
   else if(atoi(argv[1]) == 1){
-    return update_country(argc, argv);
+    return update_country(argc - 2, &argv[2]);
   }
   else{
     fprintf(stderr, "wrong parameter in begin\n");

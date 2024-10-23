@@ -8,6 +8,21 @@ cerr () {
   fi
 }
 
+get_map_id () {
+  while read line ;
+  do
+    if [ $(echo $line | awk '{print $1}') -eq $prog_id ]; then
+      if [ $(echo $line | awk '{print $4}') = $1 ]; then
+        echo $line | awk '{print $3}'
+        return 0
+      fi
+    fi
+  done < <(sudo ./list-maps.exe | grep -i "map_info" | sed 's/.*map_info//')
+
+  echo "failed to get map_id $1."
+  exit 1
+}
+
 ../../make.sh xdp.c
 cerr
 
@@ -40,50 +55,9 @@ fi
 clang ../../user/list-maps.c -o list-maps.exe -lbpf
 cerr
 
-countryblockarr_id=
-ipv4pcountrymap_id=
-ipv6pcountrymap_id=
-
-while read line ;
-do
-  if [ $(echo $line | awk '{print $1}') -eq $prog_id ]; then
-    if [ $(echo $line | awk '{print $4}') = "countryblockarr" ]; then
-      countryblockarr_id=$(echo $line | awk '{print $3}')
-      break
-    fi
-  fi
-done < <(sudo ./list-maps.exe | grep -i "map_info" | sed 's/.*map_info//')
-while read line ;
-do
-  if [ $(echo $line | awk '{print $1}') -eq $prog_id ]; then
-    if [ $(echo $line | awk '{print $4}') = "ipv4pcountrymap" ]; then
-      ipv4pcountrymap_id=$(echo $line | awk '{print $3}')
-      break
-    fi
-  fi
-done < <(sudo ./list-maps.exe | grep -i "map_info" | sed 's/.*map_info//')
-while read line ;
-do
-  if [ $(echo $line | awk '{print $1}') -eq $prog_id ]; then
-    if [ $(echo $line | awk '{print $4}') = "ipv6pcountrymap" ]; then
-      ipv6pcountrymap_id=$(echo $line | awk '{print $3}')
-      break
-    fi
-  fi
-done < <(sudo ./list-maps.exe | grep -i "map_info" | sed 's/.*map_info//')
-
-if [ -z "$countryblockarr_id" ]; then
-  echo "failed to get countryblockarr_id."
-  exit 1;
-fi
-if [ -z "$ipv4pcountrymap_id" ]; then
-  echo "failed to get ipv4pcountrymap_id."
-  exit 1;
-fi
-if [ -z "$ipv6pcountrymap_id" ]; then
-  echo "failed to get ipv6pcountrymap_id."
-  exit 1;
-fi
+countryblockarr_id=$(get_map_id countryblockarr)
+ipv4pcountrymap_id=$(get_map_id ipv4pcountrymap)
+ipv6pcountrymap_id=$(get_map_id ipv6pcountrymap)
 
 clang++ -std=c++2a control_xdp.cpp -o control_xdp.exe -lbpf
 cerr
