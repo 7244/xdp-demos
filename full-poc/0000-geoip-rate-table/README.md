@@ -1,5 +1,5 @@
 ### request
-1 - based on geoip database, make whitelist for specific countries. 
+1 - based on geoip database, make blacklist for specific countries. 
 
 2 - make rate limit (eg PPS) based on specific ip which will be provided from CLI.
 
@@ -8,7 +8,7 @@
 4 - make high performance.
 
 ### response
-1 - done. country to whitelist is changeable by CLI in runtime.
+1 - done. country to blacklist is changeable by CLI in runtime.
 
 2 - TODO
 
@@ -21,6 +21,6 @@ how to use:
 
 `./build_load_setup.sh`
 
-then for add to whitelist `./set-country.sh DE 1` to remove from whitelist `./set-country.sh DE 0`
+then for add to blacklist `./set-country.sh DE 1` to remove from blacklist `./set-country.sh DE 0`
 
 `./unload.sh` for unload the module.

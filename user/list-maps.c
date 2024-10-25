@@ -146,6 +146,8 @@ int main(){
     printf(" btf_vmlinux_id: %u\n", info.btf_vmlinux_id);
     printf(" map_extra: %llu\n", (unsigned long long)info.map_extra);
 
+    /* TODO doing this for huge trie breaks kernel... */
+    #if 0
     uint8_t *key = (uint8_t *)malloc(info.key_size);
     uint8_t *value = (uint8_t *)malloc(info.value_size);
 
@@ -183,6 +185,7 @@ int main(){
 
     free(value);
     free(key);
+    #endif
 
     if(close(map_fd)){
       perror("");

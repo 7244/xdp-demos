@@ -12,11 +12,37 @@
     return XDP_DROP; \
   }while(0)
 
+enum{
+  stats_proto_ipv4_e,
+  stats_proto_ipv6_e,
+  stats_proto_other_e,
+  stats_iplookupfail_e,
+  stats_countrylookupfail_e,
+  stats_dropcountry_e,
+  stats_droplimit_e,
+  _stats_last_e
+};
+
+struct{
+  __uint(type, BPF_MAP_TYPE_ARRAY);
+  __uint(max_entries, _stats_last_e);
+  __type(key, __u32);
+  __type(value, __u64);
+}statsarr SEC(".maps");
+
+void stats_increase(__u32 input){
+  __u64 *value = bpf_map_lookup_elem(&statsarr, &input);
+  if(value == NULL){
+    return;
+  }
+  __sync_fetch_and_add(value, 1);
+}
+
 struct{
   __uint(type, BPF_MAP_TYPE_ARRAY);
   __uint(max_entries, 256);
   __type(key, __u32);
-  __type(value, __u8); /* non zero for whitelist */
+  __type(value, __u8); /* non zero for blacklist */
 }countryblockarr SEC(".maps");
 
 struct key_ipv4prefix{
@@ -88,6 +114,8 @@ int _start(struct xdp_md *ctx){
 
     lookup_country = bpf_map_lookup_elem(&ipv4pcountrymap, &key);
     ratelimit = bpf_map_lookup_elem(&ipv4ratemap, &ipv4->saddr);
+
+    stats_increase(stats_proto_ipv4_e);
   }
   else if(eth->h_proto == htons(ETH_P_IPV6)){
     BC(ipv6);
@@ -98,24 +126,34 @@ int _start(struct xdp_md *ctx){
 
     lookup_country = bpf_map_lookup_elem(&ipv6pcountrymap, &key);
     ratelimit = bpf_map_lookup_elem(&ipv6ratemap, &ipv6->saddr);
+
+    stats_increase(stats_proto_ipv6_e);
   }
   else{
-    /* TODO can countries access outside of ipv4 ipv6 ? */
+    /* TOOD can countries access outside of ipv4 ipv6 ? */
+
+    stats_increase(stats_proto_other_e);
+
     return XDP_PASS;
   }
 
   if(lookup_country == NULL){
-    return XDP_DROP;
+    stats_increase(stats_iplookupfail_e);
+
+    return XDP_PASS;
   }
 
   __u32 country = *lookup_country;
 
-  __u8 *whitelisted = bpf_map_lookup_elem(&countryblockarr, &country);
-  if(whitelisted == NULL){
-    return XDP_DROP; /* verifier doesnt shut up */
-    __builtin_unreachable();
+  __u8 *blacklisted = bpf_map_lookup_elem(&countryblockarr, &country);
+  if(blacklisted == NULL){
+    stats_increase(stats_countrylookupfail_e);
+
+    return XDP_PASS;
   }
-  if(!*whitelisted){
+  if(*blacklisted){
+    stats_increase(stats_dropcountry_e);
+
     return XDP_DROP;
   }
 
@@ -130,7 +168,7 @@ int _start(struct xdp_md *ctx){
     if(last_time != 1) do{
       __u64 ctime = bpf_ktime_get_ns();
       __u64 diff = ctime - last_time;
-      if(diff < 10000000){
+      if(diff < 10000000){ /* early escape. good for DOS */
         pps = __sync_add_and_fetch(&ratelimit->pps, 0);
         __sync_lock_test_and_set(&ratelimit->last_time, last_time);
         break;
@@ -156,6 +194,8 @@ int _start(struct xdp_md *ctx){
 
     __u64 wanted_pps = __sync_add_and_fetch(&ratelimit->wanted_pps, 0);
     if(pps >= wanted_pps){
+      stats_increase(stats_droplimit_e);
+
       return XDP_DROP;
     }
     __sync_fetch_and_add(&ratelimit->pps, 1);
