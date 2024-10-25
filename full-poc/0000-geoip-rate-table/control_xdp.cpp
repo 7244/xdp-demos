@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+
 #include <bpf/bpf.h>
 
 #include "../../extra/country_code.hpp"
@@ -140,7 +142,7 @@ int write_prefixes(int argc, char **argv){
 }
 
 int update_country(int argc, char **argv){
-  if(argc < 3){
+  if(argc != 3){
     fprintf(stderr, "need map_id alpha2 0/1 as parameter\n");
     return 1;
   }
@@ -162,6 +164,57 @@ int update_country(int argc, char **argv){
   return 0;
 }
 
+int update_ratelimit(int argc, char **argv){
+  if(argc != 3){
+    fprintf(stderr, "update_ratelimit needs 3 parameter\n");
+    return 1;
+  }
+
+  int map_fd = get_map_fd_by_id(atoi(argv[0]));
+
+  uint32_t ip = inet_addr(argv[1]);
+  if(ip == (uint32_t)-1){
+    fprintf(stderr, "inet_addr is -1\n");
+    return 1;
+  }
+
+  struct{
+    uint64_t pps;
+    uint64_t internal0;
+    uint64_t internal1;
+  }value;
+  value.pps = atoi(argv[2]);
+
+  if(bpf_map_update_elem(map_fd, &ip, &value, BPF_ANY)){
+    perror("bpf_map_update_elem");
+    return 1;
+  }
+
+  return 0;
+}
+
+int delete_ratelimit(int argc, char **argv){
+  if(argc != 2){
+    fprintf(stderr, "delete_ratelimit needs 1 parameter\n");
+    return 1;
+  }
+
+  int map_fd = get_map_fd_by_id(atoi(argv[0]));
+
+  uint32_t ip = inet_addr(argv[1]);
+  if(ip == (uint32_t)-1){
+    fprintf(stderr, "inet_addr is -1\n");
+    return 1;
+  }
+
+  if(bpf_map_delete_elem(map_fd, &ip)){
+    perror("bpf_map_delete_elem");
+    return 1;
+  }
+
+  return 0;
+}
+
 int main(int argc, char **argv){
   if(argc < 2){
     fprintf(stderr, "need parameters\n");
@@ -173,6 +226,12 @@ int main(int argc, char **argv){
   }
   else if(atoi(argv[1]) == 1){
     return update_country(argc - 2, &argv[2]);
+  }
+  else if(atoi(argv[1]) == 2){
+    return update_ratelimit(argc - 2, &argv[2]);
+  }
+  else if(atoi(argv[1]) == 3){
+    return delete_ratelimit(argc - 2, &argv[2]);
   }
   else{
     fprintf(stderr, "wrong parameter in begin\n");

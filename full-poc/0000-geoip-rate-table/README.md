@@ -10,7 +10,7 @@
 ### response
 1 - done. country to blacklist is changeable by CLI in runtime.
 
-2 - done. need user friendly way to set it in CLI.
+2 - done. user can set PPS limit through CLI.
 
 3 - TODO
 

@@ -1,2 +1,4 @@
 GeoIP-Country-Lists
 set-country.sh
+set-ratelimit.sh
+delete-ratelimit.sh

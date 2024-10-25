@@ -69,6 +69,15 @@ cerr
 
 echo -e "#!/bin/bash\nsudo ./control_xdp.exe 1 $countryblockarr_id \$1 \$2" > set-country.sh
 cerr
-
 chmod +x set-country.sh
+cerr
+
+echo -e "#!/bin/bash\nsudo ./control_xdp.exe 2 $ipv4ratemap_id \$1 \$2" > set-ratelimit.sh
+cerr
+chmod +x set-ratelimit.sh
+cerr
+
+echo -e "#!/bin/bash\nsudo ./control_xdp.exe 3 $ipv4ratemap_id \$1" > delete-ratelimit.sh
+cerr
+chmod +x delete-ratelimit.sh
 cerr
