@@ -12,16 +12,7 @@
     return XDP_DROP; \
   }while(0)
 
-enum{
-  stats_proto_ipv4_e,
-  stats_proto_ipv6_e,
-  stats_proto_other_e,
-  stats_iplookupfail_e,
-  stats_countrylookupfail_e,
-  stats_dropcountry_e,
-  stats_droplimit_e,
-  _stats_last_e
-};
+#include "stats.h"
 
 struct{
   __uint(type, BPF_MAP_TYPE_ARRAY);
@@ -92,11 +83,32 @@ struct{
   __uint(map_flags, BPF_F_NO_PREALLOC);
 }ipv6ratemap SEC(".maps");
 
+struct sessiondata{
+  __u64 last_time;
+  __u64 total_packet;
+};
+
+struct{
+  __uint(type, BPF_MAP_TYPE_LRU_HASH);
+  __uint(max_entries, 0x4000);
+  __type(key, __u32);
+  __type(value, struct sessiondata);
+}ipv4sessionmap SEC(".maps");
+struct{
+  __uint(type, BPF_MAP_TYPE_LRU_HASH);
+  __uint(max_entries, 0x4000);
+  __type(key, struct in6_addr);
+  __type(value, struct sessiondata);
+}ipv6sessionmap SEC(".maps");
+
 SEC("start")
 int _start(struct xdp_md *ctx){
   struct ethhdr *eth = (struct ethhdr *)(unsigned long)ctx->data;
 
   BC(eth);
+
+  /* TOOD how many instructions it takes to get time? */
+  __u64 ctime = bpf_ktime_get_ns();
 
   struct ratelimit *ratelimit;
 
@@ -166,9 +178,8 @@ int _start(struct xdp_md *ctx){
     __u64 pps;
     last_time = __sync_lock_test_and_set(&ratelimit->last_time, last_time);
     if(last_time != 1) do{
-      __u64 ctime = bpf_ktime_get_ns();
       __u64 diff = ctime - last_time;
-      if(diff < 10000000){ /* early escape. good for DOS */
+      if((__s64)diff < 10000000){ /* early escape. good for DOS */
         pps = __sync_add_and_fetch(&ratelimit->pps, 0);
         __sync_lock_test_and_set(&ratelimit->last_time, last_time);
         break;
@@ -199,6 +210,28 @@ int _start(struct xdp_md *ctx){
       return XDP_DROP;
     }
     __sync_fetch_and_add(&ratelimit->pps, 1);
+  }
+
+  struct sessiondata *sessiondata;
+  struct sessiondata _sessiondata;
+  _sessiondata.last_time = ctime;
+  _sessiondata.total_packet = 0;
+  if(eth->h_proto == htons(ETH_P_IP)){
+    bpf_map_update_elem(&ipv4sessionmap, &ipv4->saddr, &_sessiondata, BPF_NOEXIST);
+    sessiondata = bpf_map_lookup_elem(&ipv4sessionmap, &ipv4->saddr);
+  }
+  else{
+    BC(ipv6); /* TOOD verifier bug. already did bound check */
+
+    bpf_map_update_elem(&ipv6sessionmap, &ipv6->saddr, &_sessiondata, BPF_NOEXIST);
+    sessiondata = bpf_map_lookup_elem(&ipv6sessionmap, &ipv6->saddr);
+  }
+
+  if(sessiondata != NULL){
+    /* ctime time can be past of what got replaced */
+    /* but since sessionmap is for info only, inaccuracy wont matter */
+    __sync_lock_test_and_set(&sessiondata->last_time, ctime);
+    __sync_fetch_and_add(&sessiondata->total_packet, 1);
   }
 
   return XDP_PASS;

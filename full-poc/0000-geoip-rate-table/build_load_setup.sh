@@ -55,11 +55,14 @@ fi
 clang ../../user/list-maps.c -o list-maps.exe -lbpf
 cerr
 
+statsarr_id=$(get_map_id statsarr)
 countryblockarr_id=$(get_map_id countryblockarr)
 ipv4pcountrymap_id=$(get_map_id ipv4pcountrymap)
 ipv6pcountrymap_id=$(get_map_id ipv6pcountrymap)
 ipv4ratemap_id=$(get_map_id ipv4ratemap)
 ipv6ratemap_id=$(get_map_id ipv6ratemap)
+ipv4sessionmap_id=$(get_map_id ipv4sessionmap)
+ipv6sessionmap_id=$(get_map_id ipv6sessionmap)
 
 clang++ -std=c++2a control_xdp.cpp -o control_xdp.exe -lbpf
 cerr
@@ -80,4 +83,9 @@ cerr
 echo -e "#!/bin/bash\nsudo ./control_xdp.exe 3 $ipv4ratemap_id \$1" > delete-ratelimit.sh
 cerr
 chmod +x delete-ratelimit.sh
+cerr
+
+echo -e "#!/bin/bash\nsudo ./control_xdp.exe 4 $statsarr_id $ipv4sessionmap_id $ipv6sessionmap_id" > list-stats.sh
+cerr
+chmod +x list-stats.sh
 cerr

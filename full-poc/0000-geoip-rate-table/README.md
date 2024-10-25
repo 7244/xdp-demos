@@ -12,15 +12,20 @@
 
 2 - done. user can set PPS limit through CLI.
 
-3 - TODO
+3 - done.
 
-4 - TODO
+4 - doneish. userside performance is not tuned, xdp code can be tuned more with less readability
 
-###
-how to use:
+### how to use:
 
 `./build_load_setup.sh`
 
-then for add to blacklist `./set-country.sh DE 1` to remove from blacklist `./set-country.sh DE 0`
+`list-stats.sh` for list stats and session list
+
+`set-ratelimit.sh <ip> <pps>`
+
+`delete-ratelimit.sh <ip>`
+
+`set-country.sh <alpha2> <0 or 1>` 1 for enable blacklist
 
 `./unload.sh` for unload the module.

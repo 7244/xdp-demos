@@ -2,12 +2,15 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include <arpa/inet.h>
 
 #include <bpf/bpf.h>
 
 #include "../../extra/country_code.hpp"
+
+#include "stats.h"
 
 uint8_t id_from_alpha2(const char *alpha2str, uintptr_t length = 0){
   length = length ? length : strlen(alpha2str);
@@ -215,6 +218,64 @@ int delete_ratelimit(int argc, char **argv){
   return 0;
 }
 
+struct sessiondata{
+  __u64 last_time;
+  __u64 total_packet;
+};
+
+int list_stats(int argc, char **argv){
+  if(argc != 3){
+    fprintf(stderr, "delete_ratelimit needs 1 parameter\n");
+    return 1;
+  }
+
+  int statsarr_fd = get_map_fd_by_id(atoi(argv[0]));
+  int ipv4sessionmap_fd = get_map_fd_by_id(atoi(argv[1]));
+  int ipv6sessionmap_fd = get_map_fd_by_id(atoi(argv[2]));
+
+  for(uint32_t istat = 0; istat < stats_e.AN(&stats_e::_stats_last_e); istat++){
+    uint64_t value;
+    if(bpf_map_lookup_elem(statsarr_fd, &istat, &value)){
+      perror("");
+      return 1;
+    }
+
+    printf("%s: %llu\n", stats_e.NA(istat)->sn, (unsigned long long)value);
+  }
+  printf("\n");
+
+  struct sessiondata sessiondata;
+  void *key_ptr;
+
+  printf("ipv4sessionmap:\n");
+
+  uint8_t ip4[4];
+  key_ptr = NULL;
+  while(1){
+    if(bpf_map_get_next_key(ipv4sessionmap_fd, key_ptr, ip4)){
+      if(errno != ENOENT){
+        perror("bpf_map_get_next_key");
+        exit(1);
+      }
+      break;
+    }
+
+    key_ptr = (void *)ip4;
+
+    if(bpf_map_lookup_elem(ipv4sessionmap_fd, ip4, &sessiondata)){
+      continue;
+    }
+
+    printf(" %u.%u.%u.%u lasttime:%llu total_packet:%llu\n",
+      ip4[0], ip4[1], ip4[2], ip4[3],
+      (unsigned long long)sessiondata.last_time,
+      (unsigned long long)sessiondata.total_packet
+    );
+  }
+
+  return 0;
+}
+
 int main(int argc, char **argv){
   if(argc < 2){
     fprintf(stderr, "need parameters\n");
@@ -232,6 +293,9 @@ int main(int argc, char **argv){
   }
   else if(atoi(argv[1]) == 3){
     return delete_ratelimit(argc - 2, &argv[2]);
+  }
+  else if(atoi(argv[1]) == 4){
+    return list_stats(argc - 2, &argv[2]);
   }
   else{
     fprintf(stderr, "wrong parameter in begin\n");
