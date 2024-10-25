@@ -187,6 +187,8 @@ int update_ratelimit(int argc, char **argv){
     uint64_t internal1;
   }value;
   value.pps = atoi(argv[2]);
+  value.internal0 = 0;
+  value.internal1 = 0;
 
   if(bpf_map_update_elem(map_fd, &ip, &value, BPF_ANY)){
     perror("bpf_map_update_elem");

@@ -149,24 +149,23 @@ int _start(struct xdp_md *ctx){
     return XDP_PASS;
   }
 
-  if(lookup_country == NULL){
+  if(lookup_country != NULL){
+    __u32 country = *lookup_country;
+
+    __u8 *blacklisted = bpf_map_lookup_elem(&countryblockarr, &country);
+    if(blacklisted != NULL){
+      if(*blacklisted){
+        stats_increase(stats_dropcountry_e);
+
+        return XDP_DROP;
+      }
+    }
+    else{
+      stats_increase(stats_countrylookupfail_e);
+    }
+  }
+  else{
     stats_increase(stats_iplookupfail_e);
-
-    return XDP_PASS;
-  }
-
-  __u32 country = *lookup_country;
-
-  __u8 *blacklisted = bpf_map_lookup_elem(&countryblockarr, &country);
-  if(blacklisted == NULL){
-    stats_increase(stats_countrylookupfail_e);
-
-    return XDP_PASS;
-  }
-  if(*blacklisted){
-    stats_increase(stats_dropcountry_e);
-
-    return XDP_DROP;
   }
 
   /* spinlock free rate limiter */
