@@ -55,7 +55,7 @@ int main(int argc, char **argv){
   struct bpf_map_info info;
   memset(&info, 0, sizeof(info));
   __u32 info_len = sizeof(struct bpf_map_info);
-  err = bpf_map_get_info_by_fd(map_fd, &info, &info_len);
+  err = bpf_obj_get_info_by_fd(map_fd, &info, &info_len);
   if(err){
     perror("");
     return 1;

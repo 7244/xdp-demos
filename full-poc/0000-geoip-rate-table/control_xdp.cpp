@@ -24,34 +24,29 @@ uint8_t id_from_alpha2(const char *alpha2str, uintptr_t length = 0){
   return country_code.AN(&country_code_t::Unknown);
 }
 
+int get_map_fd_by_id(uint32_t id){
+  if(id == 0){
+    fprintf(stderr, "map_id cant be 0\n");
+    exit(1);
+  }
+
+  int fd = bpf_map_get_fd_by_id(id);
+  if(fd < 0){
+    perror("bpf_map_get_fd_by_id");
+    exit(1);
+  }
+
+  return fd;
+}
+
 int write_prefixes(int argc, char **argv){
   if(argc < 2){
     fprintf(stderr, "need ipv4pcountrymap_id ipv6pcountrymap_id as parameter\n");
     return 1;
   }
 
-  uint32_t ipv4pcountrymap_id = atoi(argv[0]);
-  uint32_t ipv6pcountrymap_id = atoi(argv[1]);
-
-  if(!ipv4pcountrymap_id){
-    fprintf(stderr, "ipv4pcountrymap_id cant be 0\n");
-    return 1;
-  }
-  if(!ipv6pcountrymap_id){
-    fprintf(stderr, "ipv6pcountrymap_id cant be 0\n");
-    return 1;
-  }
-
-  int ipv4pcountrymap_fd = bpf_map_get_fd_by_id(ipv4pcountrymap_id);
-  if(ipv4pcountrymap_fd < 0){
-    perror("bpf_map_get_fd_by_id");
-    return 1;
-  }
-  int ipv6pcountrymap_fd = bpf_map_get_fd_by_id(ipv6pcountrymap_id);
-  if(ipv6pcountrymap_fd < 0){
-    perror("bpf_map_get_fd_by_id");
-    return 1;
-  }
+  int ipv4pcountrymap_fd = get_map_fd_by_id(atoi(argv[0]));
+  int ipv6pcountrymap_fd = get_map_fd_by_id(atoi(argv[1]));
 
   for(int iarg = 2; iarg < argc; iarg++){
     char *arg = argv[iarg];
@@ -150,18 +145,7 @@ int update_country(int argc, char **argv){
     return 1;
   }
 
-  uint32_t map_id = atoi(argv[0]);
-
-  if(!map_id){
-    fprintf(stderr, "map_id cant be 0\n");
-    return 1;
-  }
-
-  int map_fd = bpf_map_get_fd_by_id(map_id);
-  if(map_fd < 0){
-    perror("bpf_map_get_fd_by_id");
-    return 1;
-  }
+  int map_fd = get_map_fd_by_id(atoi(argv[0]));
 
   uint32_t id = id_from_alpha2(argv[1]);
   if(id == country_code.AN(&country_code_t::Unknown)){

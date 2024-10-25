@@ -27,7 +27,7 @@ __u32 get_prog_id_by_map_id(__u32 map_id){
 
     memset(&prog_info, 0, sizeof(prog_info));
     prog_info_len = sizeof(prog_info);
-    if(bpf_prog_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
+    if(bpf_obj_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
       perror("");
       exit(1);
     }
@@ -40,7 +40,7 @@ __u32 get_prog_id_by_map_id(__u32 map_id){
     prog_info.map_ids = (uintptr_t)malloc(num_maps * sizeof(__u32));
     memset((void *)prog_info.map_ids, 0, num_maps * sizeof(__u32));
     prog_info_len = sizeof(prog_info);
-    if(bpf_prog_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
+    if(bpf_obj_get_info_by_fd(prog_fd, &prog_info, &prog_info_len)){
       perror("");
       exit(1);
     }
@@ -81,7 +81,7 @@ __u32 get_plain_prog_info_by_id(__u32 prog_id, struct bpf_prog_info *prog_info){
 
   memset(prog_info, 0, sizeof(*prog_info));
   __u32 prog_info_len = sizeof(*prog_info);
-  if(bpf_prog_get_info_by_fd(prog_fd, prog_info, &prog_info_len)){
+  if(bpf_obj_get_info_by_fd(prog_fd, prog_info, &prog_info_len)){
     perror("");
     exit(1);
   }
@@ -108,7 +108,7 @@ int main(){
     struct bpf_map_info info;
     memset(&info, 0, sizeof(info));
     __u32 info_len = sizeof(struct bpf_map_info);
-    err = bpf_map_get_info_by_fd(map_fd, &info, &info_len);
+    err = bpf_obj_get_info_by_fd(map_fd, &info, &info_len);
     if(err){
       perror("");
       return 1;
@@ -143,8 +143,6 @@ int main(){
     printf(" btf_id: %u\n", info.btf_id);
     printf(" btf_key_type_id: %u\n", info.btf_key_type_id);
     printf(" btf_value_type_id: %u\n", info.btf_value_type_id);
-    printf(" btf_vmlinux_id: %u\n", info.btf_vmlinux_id);
-    printf(" map_extra: %llu\n", (unsigned long long)info.map_extra);
 
     /* TODO doing this for huge trie breaks kernel... */
     #if 0
