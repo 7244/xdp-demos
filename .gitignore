@@ -3,3 +3,6 @@ load.sh
 unload.sh
 bpf.o
 *.exe
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake

@@ -8,9 +8,9 @@
 
 #include <bpf/bpf.h>
 
-#include "../../extra/country_code.hpp"
+#include "../../../extra/country_code.hpp"
 
-#include "stats.h"
+#include "../stats.h"
 
 uint8_t id_from_alpha2(const char *alpha2str, uintptr_t length = 0){
   length = length ? length : strlen(alpha2str);
