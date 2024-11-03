@@ -64,8 +64,13 @@ ipv6ratemap_id=$(get_map_id ipv6ratemap)
 ipv4sessionmap_id=$(get_map_id ipv4sessionmap)
 ipv6sessionmap_id=$(get_map_id ipv6sessionmap)
 
-clang++ -std=c++2a control_xdp.cpp -o control_xdp.exe -lbpf
+cd control_xdp
 cerr
+cmake .
+cerr
+make
+cerr
+cd ..
 
 sudo ./control_xdp.exe 0 $ipv4pcountrymap_id $ipv6pcountrymap_id GeoIP-Country-Lists/Build/*
 cerr
