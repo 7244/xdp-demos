@@ -1,5 +1,5 @@
 #if defined(__cplusplus)
-  struct stats_e : __dme_inherit<stats_e>{
+  struct stats_e : __dme_inherit(stats_e){
   #define d(name, ...) __dme(name,);
 #else
   enum{

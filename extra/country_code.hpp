@@ -7,7 +7,7 @@ struct country_code_data_t{
 #define d(p_full_name, p_alpha2) \
   __dme(p_full_name,) = {{.alpha2 = #p_alpha2}}
 
-struct country_code_t : __dme_inherit<country_code_t, country_code_data_t>{
+struct country_code_t : __dme_inherit(country_code_t, country_code_data_t){
   d(ARIPO, AP);
   d(European_Union, EU);
 

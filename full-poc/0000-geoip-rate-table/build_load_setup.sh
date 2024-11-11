@@ -71,6 +71,7 @@ cerr
 make
 cerr
 cd ..
+cerr
 
 sudo ./control_xdp.exe 0 $ipv4pcountrymap_id $ipv6pcountrymap_id GeoIP-Country-Lists/Build/*
 cerr

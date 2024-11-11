@@ -26,7 +26,7 @@ uint8_t id_from_alpha2(const char *alpha2str, uintptr_t length = 0){
     }
   }
 
-  return country_code.AN(&country_code_t::Unknown);
+  return country_code.Unknown;
 }
 
 int get_map_fd_by_id(uint32_t id){
@@ -98,7 +98,7 @@ int write_prefixes(int argc, char **argv){
 
     uint8_t country_id = id_from_alpha2(arg, 2);
 
-    if(country_id == country_code.AN(&country_code_t::Unknown)){
+    if(country_id == country_code.Unknown){
       fprintf(stderr, "country_id is Unknown %.*s\n", 2, arg);
       return 1;
     }
@@ -153,7 +153,7 @@ int update_country(int argc, char **argv){
   int map_fd = get_map_fd_by_id(atoi(argv[0]));
 
   uint32_t id = id_from_alpha2(argv[1]);
-  if(id == country_code.AN(&country_code_t::Unknown)){
+  if(id == country_code.Unknown){
     fprintf(stderr, "id_from_alpha2 returns Unknown for %s\n", argv[1]);
     return 1;
   }
@@ -235,7 +235,7 @@ int list_stats(int argc, char **argv){
   int ipv4sessionmap_fd = get_map_fd_by_id(atoi(argv[1]));
   int ipv6sessionmap_fd = get_map_fd_by_id(atoi(argv[2]));
 
-  for(uint32_t istat = 0; istat < stats_e.AN(&stats_e::_stats_last_e); istat++){
+  for(uint32_t istat = 0; istat < stats_e._stats_last_e; istat++){
     uint64_t value;
     if(bpf_map_lookup_elem(statsarr_fd, &istat, &value)){
       perror("");
