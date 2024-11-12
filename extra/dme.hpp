@@ -1,11 +1,5 @@
 #pragma once
 
-#ifndef STR
-  #define STR(_m) #_m
-#endif
-#ifndef CONCAT
-  #define CONCAT(_0_m, _1_m) _0_m ## _1_m
-#endif
 #ifndef __empty_struct
   #define __empty_struct __empty_struct
   typedef struct{
@@ -13,29 +7,28 @@
 #endif
 #ifndef __compiletime_str
   #define __compiletime_str __compiletime_str
-  template<std::size_t count>
+  template<uintptr_t count>
   struct __compiletime_str
   {
     char buffer[count + 1]{};
-    int length = count;
+    uintptr_t length = count;
 
-    constexpr __compiletime_str(char const* string)
-    {
-      for (std::size_t i = 0; i < count; ++i) {
+    constexpr __compiletime_str(char const* string){
+      for (uintptr_t i = 0; i < count; ++i) {
         buffer[i] = string[i];
       }
     }
     constexpr operator char const* () const { return buffer; }
   };
-  template<std::size_t count>
+  template<uintptr_t count>
   __compiletime_str(char const (&)[count])->__compiletime_str<count - 1>;
 #endif
 #ifndef __dme
-  template <typename T, int idx, __compiletime_str str = "", typename dt_t = void>
+  template <typename T, uintptr_t idx, __compiletime_str str = "", typename dt_t = void>
   struct __dme_t : T {
     using dt = dt_t;
-    static constexpr int I = idx;
-    constexpr operator int() { return I; }
+    static constexpr uintptr_t I = idx;
+    constexpr operator uintptr_t() { return I; }
     static constexpr unsigned long long AN() {
       return I;
     }
@@ -56,7 +49,7 @@
     })> \
   > varname
 
-  template <typename main_t, int index, typename T = __empty_struct>
+  template <typename main_t, uintptr_t index, typename T = __empty_struct>
   struct __dme_inherit_t {
     using dme_type_t = T;
 
